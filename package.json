@@ -21,7 +21,7 @@
     "koishi",
     "plugin",
     "回声洞",
-    "投稿"
+    "图片投稿"
   ],
   "peerDependencies": {
     "koishi": "^4.17.6"
