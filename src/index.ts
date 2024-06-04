@@ -51,15 +51,20 @@ export interface Config {
   consoleinfo: any;
   consolefor: any;
   nameinfo: any;
+  number: number;
+  helpinfo: any;
 }
+
 export const Config: Schema<Config> = Schema.intersect([
   Schema.object({
     manager: Schema.array(Schema.string())
       .required()
       .description('管理员QQ，一个项目填一个ID'),
     consoleinfo: Schema.boolean().default(false).description('日志调试模式'),
-    consolefor: Schema.boolean().default(true).description('开启-g指令指定回声洞'),
-    nameinfo:Schema.boolean().default(false).description('使用陌生人接口获取昵称'),
+    consolefor: Schema.boolean().default(false).description('开启-g指令指定回声洞'),
+    number: Schema.number().default(3).description('群单位回声洞冷却时间,单位为秒'),
+    helpinfo: Schema.boolean().default(true).description('开启冷却显示'),
+    nameinfo:Schema.boolean().default(false).description('使用陌生人接口获取昵称')
   })
 ])
 
@@ -207,6 +212,7 @@ async function deleteFiles(paths: string[]): Promise<void> {
   }
 }
 
+
 export async function apply(ctx: Context, config: Config) {
   interface CaveObject {
     cave_id: number;
@@ -246,11 +252,15 @@ export async function apply(ctx: Context, config: Config) {
     }
     await ensureFileExists(caveFilePath);
     await ensureFileExistss(caveDataFilePath);
+
+    const lastUsed:Map<string, number> = new Map();
     
   ctx.command('cave [image]', '回声洞')
     .option('a', '-a 添加回声洞')
     .option('g', '-g 查看当前id的回声洞内容')
     .option('r', '-r 删除当前id的回声洞')
+    .usage('注意: 直接使用回声洞指令该为cave,添加回声洞为cave -a,-g为只能管理员使用.')
+    .example('cave 随机一条回声洞\ncave -a 回复你要添加的图片或文字添加回声洞(不能是合并转发,视频,音频等)\ncave -g 查看当前id的回声洞内容(只能管理员使用或开启可选项后所有人都能使用)\ncave -r 删除当前id的回声洞')
     // .option('c', '-c 设置当前群聊的回声洞冷却')
     // .option('m', '-m 获取新增投稿的审核情况')
     .action(async ({ session, options }, image) => {
@@ -507,16 +517,34 @@ export async function apply(ctx: Context, config: Config) {
     }
         }
         }
+        
 
       if(!options.a && !options.r && !options.g){
         const data = readJsonFile(caveFilePath);
         // 过滤出 state 值为 0 的对象
         const filteredData = data.filter(item => item.state === 0);
+        const guildId = session.guildId;
+        const lastCall = lastUsed.get(guildId) || 0
+        const now = Date.now();
+        
+
 
         if (filteredData.length === 0) {
             return session.send('没有找到符合条件的回声洞。');
         }
 
+        const diff = now - lastCall
+
+        if (diff < config.number * 1000) {
+          const timeLeft = Math.ceil((config.number * 1000 - diff) / 1000)
+          if(config.helpinfo){
+          return `群回声洞调用的太频繁了,请等待${timeLeft}秒后再试`
+          }else{
+            return 
+          }
+        }
+        
+        lastUsed.set(guildId, now);
         const randomObject = getRandomObject(filteredData);
         const { cave_id, message, contributor_id, state } = randomObject;
   
@@ -592,6 +620,8 @@ export async function apply(ctx: Context, config: Config) {
     ctx.private().command('setcave <image>', '私聊审核')
     .option('t', '-t 私聊审核通过回声洞')
     .option('f', '-f 私聊审核不通过回声洞')
+    .usage('注意:未审核的回声洞不在可抽取列表,该指令只能在私聊使用,群聊使用无响应属于正常.')
+    .example('setcave -t 1/all 审核通过id为1/全部的未审核回声洞\nsetcave -f 1/all 不通过id为1/全部的未审核回声洞')
     .action(async ({ session, options }, image) => {
     const all = 'all';
     // let id: number;
