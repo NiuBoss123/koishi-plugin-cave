@@ -1,6 +1,13 @@
-# koishi-plugin-cave
+<div align="center">
+  <a href="https://github.com/initialencounter/mykoishi">
+    <a href="https://koishi.chat/" target="_blank">
+    <img width="160" src="https://koishi.chat/logo.png" alt="logo">
+  </a>
+  </a>
+<h3 align="center">koishi-plugin-cave</h3>
 
 [![npm](https://img.shields.io/npm/v/koishi-plugin-cave?style=flat-square)](https://www.npmjs.com/package/koishi-plugin-cave)
+</div>
 
 ## 🤖 介绍
 

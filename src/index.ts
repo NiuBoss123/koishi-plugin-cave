@@ -27,8 +27,6 @@ export const name = 'cave'
 //   guild: number[]
 // }
 
-
-
 // export interface CaveData {
 //   groups_dict: []
 //   white_B: []
@@ -70,7 +68,7 @@ export const Config: Schema<Config> = Schema.intersect([
 
 //抄上学的
 export async function saveImages(urls, selectedPath, safeFilename, imageExtension, config, session, ctx ){
-  
+
     let url = urls;
     let fileRoot = path.join(selectedPath, safeFilename);
     let fileExt = `.${imageExtension}`;
@@ -85,7 +83,7 @@ export async function saveImages(urls, selectedPath, safeFilename, imageExtensio
       index++; // 文件存在时，序号递增
       targetPath = `${fileRoot}_${index}${fileExt}`; // 更新目标文件路径
     }
-      
+
       // 下载并保存图片
     try {
       const buffer = await ctx.http.get(url);
@@ -103,7 +101,7 @@ export async function saveImages(urls, selectedPath, safeFilename, imageExtensio
       } catch (error) {
         logger.info('保存图片时出错： ' + error.message);
         await session.send(`保存图片时出错(函数内)：${error.message}`);
-      
+
   }
     // return path.join(selectedPath, targetPath);
     if (config.consoleinfo) {
@@ -254,34 +252,34 @@ export async function apply(ctx: Context, config: Config) {
     await ensureFileExistss(caveDataFilePath);
 
     const lastUsed:Map<string, number> = new Map();
-    
+
   ctx.command('cave [image]', '回声洞')
     .option('a', '-a 添加回声洞')
     .option('g', '-g 查看当前id的回声洞内容')
     .option('r', '-r 删除当前id的回声洞')
-    .usage('注意: 直接使用回声洞指令该为cave,添加回声洞为cave -a,-g为只能管理员使用.')
+    .usage(`注意: 直接使用回声洞指令该为cave,添加回声洞为cave -a,-g为只能管理员使用.当前回声洞全局冷却为${config.number}`)
     .example('cave 随机一条回声洞\ncave -a 回复你要添加的图片或文字添加回声洞(不能是合并转发,视频,音频等)\ncave -g 查看当前id的回声洞内容(只能管理员使用或开启可选项后所有人都能使用)\ncave -r 删除当前id的回声洞')
     // .option('c', '-c 设置当前群聊的回声洞冷却')
     // .option('m', '-m 获取新增投稿的审核情况')
     .action(async ({ session, options }, image) => {
-      
+
     if(options.a){
       let quote = session.quote
       let imageURL: string
       let sessioncontent: string = session.content
 
       imageURL=h.select(sessioncontent, 'img').map(a =>a.attrs.src)[0]
-      console.log(session.event.message)
+      // console.log(session.event.message)
       console.log(imageURL)
       if (!imageURL && !quote) {
-        return '请输入内容或引用回复一条消息'}
+        return '请输入图片或引用回复一条消息'}
       // let imageURL: string | Buffer | URL | ArrayBufferLike
-      let elements = quote?.elements 
+      let elements = quote?.elements
       let textContents = []
       let imgSrcs = []
       let message = []
         // 遍历elements数组
-        console.log(elements)
+        // console.log(elements)
         if (elements) {
       elements.forEach(element => {
         if (element.type === 'text') {
@@ -316,7 +314,9 @@ export async function apply(ctx: Context, config: Config) {
       const imageExtension = 'png'
 
       if (config.consoleinfo) {
-      logger.info('用户输入： ' + imageURL);
+        if(imageURL){
+          logger.info('用户输入： ' + imageURL);
+        }
       }
 
       let getcaveid = await getMaxCaveId(caveFilePath)
@@ -333,7 +333,7 @@ export async function apply(ctx: Context, config: Config) {
           logger.warn('未找到 bot 实例，无法发送私信给审核人员。');
           return;
         }
-    
+
         for (const manager of config.manager) {
           await bot.sendPrivateMessage(manager, messageElements);
         }
@@ -377,7 +377,7 @@ export async function apply(ctx: Context, config: Config) {
         let textContentss = unicodeToString(textContents.join(' '));
         if(imageURL){
           let messageElements = [
-          `新的待审核回声洞(${cave_id})\n`,
+          `新的待审核回声洞[ ${cave_id} ]\n`,
           textContentss,
           h.image(imageURL),
           `—— ${contributor_id}`
@@ -386,7 +386,7 @@ export async function apply(ctx: Context, config: Config) {
         // console.log(session.event.message)
       }else{
         let messageElements = [
-          `新的待审核回声洞(${cave_id})\n`,
+          `新的待审核回声洞[ ${cave_id} ]\n`,
           textContentss,
           `—— ${contributor_id}`
         ];
@@ -394,14 +394,16 @@ export async function apply(ctx: Context, config: Config) {
         // console.log(session.event.message)
       }
     } catch (error) {
-        return `保存图片出错：${error.message}`;
+        if(imageURL){
+          logger.info(`保存图片出错：${error.message}`) ;
+        }
           }
       }
       if(options.r){
         const data = await readJsonFile(caveFilePath);
         const imageNumber = Number(image);
         const managers = config.manager;
-        
+
         if (!managers.includes(session.userId)) {
           await session.send('您没有权限执行此命令。');
           return;
@@ -424,7 +426,6 @@ export async function apply(ctx: Context, config: Config) {
       await deleteFiles(filesToDelete);
       await writeJsonFile(caveFilePath, updatedData);
       await session.send(`回声洞序号 ${imageNumber} 已成功删除。`);
-    
         }
 
       if(options.g){
@@ -451,7 +452,7 @@ export async function apply(ctx: Context, config: Config) {
           let texts =caveToFind.message.map(destructureAndPrints);
         let messages = caveToFind.message.map(destructureAndPrint);
         let filteredTexts = texts.filter(text => text !== undefined);
-        console.log(contributor_id)
+        // console.log(contributor_id)
         let username = contributor_id
         if(config.nameinfo){
           const user = await ctx.bots[0].getUser(contributor_id)
@@ -495,29 +496,36 @@ export async function apply(ctx: Context, config: Config) {
         let str = chars.join('');
         if (!str) {
         const messageElements = [
-          `回声洞 —— (${cave_id})`,
+          `回声洞 —— [ ${cave_id} ]`,
           `\n`,
-          h('image', { src: messages.filter(msg => msg).join('\n')}), 
+          h('image', { src: messages.filter(msg => msg).join('\n')}),
           `—— ${username}`
       ]
         session.send(messageElements);
         // console.log(messageElements);
-    }else{
+    }else if (messages.length === 1 && messages[0] !== '') {
       const messageElements = [
-        `回声洞 —— (${cave_id})`,
+        `回声洞 —— [ ${cave_id} ]`,
         `\n\n`,
-        // h.transform(message, ),
         h.text(str), // 确保文本部分正确显示
         '\n\n', // 手动添加换行符
-        h('image', { src: messages.filter(msg => msg).join('\n')}), 
+        h('image', { src: messages.filter(msg => msg).join('\n')}),
         // '\n\n', // 手动添加换行符
         `—— ${username}`
     ]
       session.send(messageElements);
-    }
+    }else{
+          const messageElements = [
+            `回声洞 —— [ ${cave_id} ]`,
+            `\n\n`,
+            h.text(str), // 确保文本部分正确显示
+            '\n\n', // 手动添加换行符
+            `—— ${username}`
+          ]
+          session.send(messageElements);
         }
         }
-        
+        }
 
       if(!options.a && !options.r && !options.g){
         const data = readJsonFile(caveFilePath);
@@ -526,11 +534,9 @@ export async function apply(ctx: Context, config: Config) {
         const guildId = session.guildId;
         const lastCall = lastUsed.get(guildId) || 0
         const now = Date.now();
-        
-
 
         if (filteredData.length === 0) {
-            return session.send('没有找到符合条件的回声洞。');
+            return '没有找到符合条件的回声洞.';
         }
 
         const diff = now - lastCall
@@ -540,14 +546,14 @@ export async function apply(ctx: Context, config: Config) {
           if(config.helpinfo){
           return `群回声洞调用的太频繁了,请等待${timeLeft}秒后再试`
           }else{
-            return 
+            return
           }
         }
-        
+
         lastUsed.set(guildId, now);
         const randomObject = getRandomObject(filteredData);
         const { cave_id, message, contributor_id, state } = randomObject;
-  
+
         let texts =randomObject.message.map(destructureAndPrints);
         let messages = randomObject.message.map(destructureAndPrint);
         let filteredTexts = texts.filter(text => text !== undefined);
@@ -593,31 +599,44 @@ export async function apply(ctx: Context, config: Config) {
         let str = chars.join('');
         if (!str) {
           const messageElements = [
-            `回声洞 —— (${cave_id})`,
+            `回声洞 —— [ ${cave_id} ]`,
             `\n`,
-            h('image', { src: messages.filter(msg => msg).join('\n')}), 
+            h('image', { src: messages.filter(msg => msg).join('\n')}),
             `—— ${username}`
         ]
           session.send(messageElements);
+          // console.log('1')
           // console.log(messageElements);
-      }else{
-        const messageElements = [
-          `回声洞 —— (${cave_id})`,
-          `\n\n`,
-          // h.transform(message, ),
-          h.text(str), // 确保文本部分正确显示
-          '\n\n', // 手动添加换行符
-          h('image', { src: messages.filter(msg => msg).join('\n')}), 
-          // '\n\n', // 手动添加换行符
-          `—— ${username}`
-      ]
-        session.send(messageElements);
-      }
+      }else if (messages.length === 1 && messages[0] !== '') {
+          const messageElements = [
+            `回声洞 —— [ ${cave_id} ]`,
+            `\n\n`,
+            h.text(str), // 确保文本部分正确显示
+            '\n\n', // 手动添加换行符
+            h('image', { src: messages.filter(msg => msg).join('\n')}),
+            // '\n\n', // 手动添加换行符
+            `—— ${username}`
+          ]
+          session.send(messageElements);
+          // console.log('2')
+          // console.log(messages)
+        }else{
+          const messageElements = [
+            `回声洞 —— [ ${cave_id} ]`,
+            `\n\n`,
+            h.text(str), // 确保文本部分正确显示
+            '\n\n', // 手动添加换行符
+            `—— ${username}`
+          ]
+          session.send(messageElements);
+          // console.log('3')
+        }
         // console.log(messageElements);
         }
     })
 
     ctx.private().command('setcave <image>', '私聊审核')
+      .alias('回声洞审核')
     .option('t', '-t 私聊审核通过回声洞')
     .option('f', '-f 私聊审核不通过回声洞')
     .usage('注意:未审核的回声洞不在可抽取列表,该指令只能在私聊使用,群聊使用无响应属于正常.')
@@ -709,5 +728,5 @@ export async function apply(ctx: Context, config: Config) {
   }
 });
     }
-  
+
 
