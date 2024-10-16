@@ -100,7 +100,7 @@ export async function saveImages(urls, selectedPath, safeFilename, imageExtensio
       //   }
       } catch (error) {
         logger.info('保存图片时出错： ' + error.message);
-        await session.send(`保存图片时出错(函数内)：${error.message}`);
+        // await session.send(`保存图片时出错(函数内)：${error.message}`);
 
   }
     // return path.join(selectedPath, targetPath);
@@ -269,8 +269,8 @@ export async function apply(ctx: Context, config: Config) {
       let sessioncontent: string = session.content
 
       imageURL=h.select(sessioncontent, 'img').map(a =>a.attrs.src)[0]
-      // console.log(session.event.message)
-      console.log(imageURL)
+      // console.log(session.quote)
+      // console.log(imageURL)
       if (!imageURL && !quote) {
         return '请输入图片或引用回复一条消息'}
       // let imageURL: string | Buffer | URL | ArrayBufferLike
@@ -373,7 +373,7 @@ export async function apply(ctx: Context, config: Config) {
             console.log("JSON 文件已成功保存！");
           }
         })
-        await session.send(`添加成功,序号为 ${cave_id}\n提交者: ${contributor_id}`);
+        await session.send(`添加成功,序号为 [${cave_id}]\n提交者: ${contributor_id}`);
         let textContentss = unicodeToString(textContents.join(' '));
         if(imageURL){
           let messageElements = [
@@ -493,12 +493,13 @@ export async function apply(ctx: Context, config: Config) {
           return '';
         });
         // console.log(chars);
+        const file = 'file:///'
         let str = chars.join('');
         if (!str) {
         const messageElements = [
           `回声洞 —— [ ${cave_id} ]`,
           `\n`,
-          h('image', { src: messages.filter(msg => msg).join('\n')}),
+          h('image', { src: file + messages.filter(msg => msg).join('\n')}),
           `—— ${username}`
       ]
         session.send(messageElements);
@@ -509,7 +510,7 @@ export async function apply(ctx: Context, config: Config) {
         `\n\n`,
         h.text(str), // 确保文本部分正确显示
         '\n\n', // 手动添加换行符
-        h('image', { src: messages.filter(msg => msg).join('\n')}),
+        h('image', { src: file + messages.filter(msg => msg).join('\n')}),
         // '\n\n', // 手动添加换行符
         `—— ${username}`
     ]
@@ -524,8 +525,8 @@ export async function apply(ctx: Context, config: Config) {
           ]
           session.send(messageElements);
         }
-        }
-        }
+      }
+    }
 
       if(!options.a && !options.r && !options.g){
         const data = readJsonFile(caveFilePath);
@@ -571,6 +572,7 @@ export async function apply(ctx: Context, config: Config) {
           username = user.name
         }
         // console.log(username)
+
         let chars = filteredTexts.map(text => {
           if (text !== undefined) {
             // 检查是否包含Unicode字符
@@ -596,12 +598,13 @@ export async function apply(ctx: Context, config: Config) {
           return '';
         });
         // console.log(chars);
+        const file = 'file:///'
         let str = chars.join('');
         if (!str) {
           const messageElements = [
             `回声洞 —— [ ${cave_id} ]`,
             `\n`,
-            h('image', { src: messages.filter(msg => msg).join('\n')}),
+            h('image', { src: file + messages.filter(msg => msg).join('\n')}),
             `—— ${username}`
         ]
           session.send(messageElements);
@@ -613,7 +616,7 @@ export async function apply(ctx: Context, config: Config) {
             `\n\n`,
             h.text(str), // 确保文本部分正确显示
             '\n\n', // 手动添加换行符
-            h('image', { src: messages.filter(msg => msg).join('\n')}),
+            h('image', { src: file + messages.filter(msg => msg).join('\n')}),
             // '\n\n', // 手动添加换行符
             `—— ${username}`
           ]
@@ -677,9 +680,9 @@ export async function apply(ctx: Context, config: Config) {
         if (targetItem && targetItem.state === 1) {
           targetItem.state = 0;
           writeJsonFile(caveFilePath, data);
-          await session.send(`回声洞序号:(${imageNumber})已审核`);
+          await session.send(`回声洞序号: [(]${imageNumber}] 已审核`);
         } else {
-          await session.send(`未找到序号为(${imageNumber})的未审核回声洞。`);
+          await session.send(`未找到序号为 [(]${imageNumber}] 的未审核回声洞。`);
         }
       }
     } catch (error) {
@@ -709,7 +712,7 @@ export async function apply(ctx: Context, config: Config) {
       });
       // 写回更新后的数据
       writeJsonFile(caveFilePath, data);
-      await session.send(`已不通过(${updatedCount})个回声洞。`);
+      await session.send(`已不通过 [${updatedCount}] 个回声洞。`);
     } else {
       const imageNumber = Number(image);
       // 查找指定 cave_id 的对象并修改 state 值
@@ -717,9 +720,9 @@ export async function apply(ctx: Context, config: Config) {
       if (targetItem && targetItem.state === 1) {
         targetItem.state = 2;
         writeJsonFile(caveFilePath, data);
-        await session.send(`回声洞序号:(${imageNumber})审核不通过`);
+        await session.send(`回声洞序号: [${imageNumber}] 审核不通过`);
       } else {
-        await session.send(`未找到序号为(${imageNumber})的未审核回声洞。`);
+        await session.send(`未找到序号为 [${imageNumber}] 的未审核回声洞。`);
       }
     }
   } catch (error) {
